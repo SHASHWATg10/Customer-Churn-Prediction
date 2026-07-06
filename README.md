@@ -1,37 +1,92 @@
-# Customer Churn Prediction
+# 📊 Customer Churn Prediction
 
-A professional Machine Learning web application built with Streamlit.
+A Machine Learning web application that predicts whether a telecom customer is likely to churn based on customer profile, service usage, and support interactions.
 
-## Features
+## 🚀 Live Demo
 
-- Customer Input Form
-- Decision Tree Pipeline
-- Prediction Probability
-- Download Prediction
-- Modern Dashboard
-- Error Handling
+👉 https://YOUR-STREAMLIT-LINK.streamlit.app/
 
-## Installation
+---
+
+## 📌 Features
+
+- Predict customer churn instantly
+- Interactive Streamlit dashboard
+- Automatic feature engineering
+- One-hot encoding for categorical features
+- Churn probability prediction
+- Clean and responsive UI
+
+---
+
+## 🛠 Tech Stack
+
+- Python
+- Streamlit
+- Scikit-learn
+- Pandas
+- NumPy
+- Joblib
+
+---
+
+## 📂 Dataset
+
+Telecom Customer Churn Dataset
+
+Features include:
+
+- Account Length
+- International Plan
+- Voice Mail Plan
+- Call Minutes
+- Call Counts
+- Customer Service Calls
+- State
+- Revenue Segment
+
+---
+
+## 🤖 Machine Learning Pipeline
+
+- Data Cleaning
+- Feature Engineering
+- One-Hot Encoding
+- Standard Scaling
+- Decision Tree Classifier
+
+---
+
+## 📸 Application
+
+![App Screenshot](images/app.png)
+
+---
+
+## ⚙️ Installation
 
 ```bash
+git clone https://github.com/SHASHWATg10/Customer-Churn-Prediction.git
+
+cd Customer-Churn-Prediction
+
 pip install -r requirements.txt
-```
 
-Run
-
-```bash
 streamlit run app.py
 ```
 
-Project Structure
+---
 
-```
-Customer_Churn_Project/
+## 📈 Future Improvements
 
-│── app.py
-│── best_model.pkl
-│── customer_data.csv
-│── notebook.ipynb
-│── requirements.txt
-└── README.md
-```
+- SHAP Explainability
+- Batch CSV Prediction
+- Customer Segmentation Dashboard
+- Model Comparison
+- Cloud Database Integration
+
+---
+
+## 👨‍💻 Author
+
+Shashwat Gupta
