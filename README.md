@@ -59,7 +59,8 @@ Features include:
 
 ## 📸 Application
 
-![App Screenshot](images/app.png)
+![App Screenshot](images/app1.png)
+![App Screenshot](images/app2.png)
 
 ---
 
