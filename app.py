@@ -1,288 +1,100 @@
+
 import streamlit as st
 import pandas as pd
 import joblib
-import numpy as np
-from datetime import datetime
 
-# -----------------------------
-# Page Configuration
-# -----------------------------
-st.set_page_config(
-    page_title="Customer Churn Prediction",
-    page_icon="📊",
-    layout="wide"
-)
+st.set_page_config(page_title="Customer Churn Prediction", page_icon="📊", layout="wide")
 
-# -----------------------------
-# Custom CSS
-# -----------------------------
-st.markdown("""
-<style>
-
-.main {
-    background-color:#f8f9fa;
-}
-
-h1{
-    color:#0f62fe;
-    text-align:center;
-}
-
-.stButton>button{
-    background:#0f62fe;
-    color:white;
-    border-radius:10px;
-    height:50px;
-    width:100%;
-    font-size:18px;
-}
-
-.stDownloadButton>button{
-    background:green;
-    color:white;
-}
-
-.result{
-    padding:20px;
-    border-radius:12px;
-    font-size:22px;
-    text-align:center;
-}
-
-</style>
-""", unsafe_allow_html=True)
-
-# -----------------------------
-# Load Model
-# -----------------------------
 @st.cache_resource
 def load_model():
     return joblib.load("best_model.pkl")
 
-try:
-    model = load_model()
-except Exception as e:
-    st.error(f"Unable to load model.\n\n{e}")
-    st.stop()
+model = load_model()
 
-# -----------------------------
-# Sidebar
-# -----------------------------
-st.sidebar.title("📊 Customer Churn")
+states = ["AL","AR","AZ","CA","CO","CT","DC","DE","FL","GA","HI","IA","ID","IL","IN","KS","KY","LA","MA","MD","ME","MI","MN","MO","MS","MT","NC","ND","NE","NH","NJ","NM","NV","NY","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VA","VT","WA","WI","WV","WY"]
 
-st.sidebar.markdown("""
-### About
-
-This application predicts whether a customer is likely to churn using a trained Machine Learning Decision Tree Pipeline.
-
-### Model
-Decision Tree Pipeline
-
-### Features
-- Probability Prediction
-- Download Results
-- Professional UI
-""")
-
-# -----------------------------
-# Title
-# -----------------------------
 st.title("📊 Customer Churn Prediction")
 
-st.write("Fill customer information below and click **Predict**.")
+with st.sidebar:
+    st.header("Model")
+    st.write("Decision Tree Pipeline")
+    st.write("Enter customer details and click Predict.")
 
-# -----------------------------
-# Input Form
-# -----------------------------
-with st.form("prediction_form"):
+c1,c2=st.columns(2)
 
-    col1, col2 = st.columns(2)
+with c1:
+    state=st.selectbox("State",states)
+    account=st.number_input("Account length",1,500,100)
+    intl_plan=st.selectbox("International plan",["No","Yes"])
+    vm_plan=st.selectbox("Voice mail plan",["No","Yes"])
+    day_min=st.number_input("Total day minutes",0.0,400.0,180.0)
+    day_calls=st.number_input("Total day calls",0,300,100)
+    eve_min=st.number_input("Total eve minutes",0.0,400.0,200.0)
+    eve_calls=st.number_input("Total eve calls",0,300,100)
 
-    with col1:
+with c2:
+    night_min=st.number_input("Total night minutes",0.0,400.0,200.0)
+    night_calls=st.number_input("Total night calls",0,300,100)
+    intl_min=st.number_input("Total intl minutes",0.0,30.0,10.0)
+    intl_calls=st.number_input("Total intl calls",0,30,4)
+    cs_calls=st.number_input("Customer service calls",0,20,1)
 
-        gender = st.selectbox(
-            "Gender",
-            ["Male", "Female"]
-        )
+if st.button("Predict Churn", use_container_width=True):
+    total_charges = day_min*0.17 + eve_min*0.085 + night_min*0.045 + intl_min*0.27
+    total_usage = day_min + eve_min + night_min + intl_min
+    service_stress = cs_calls/max(account,1)
 
-        SeniorCitizen = st.selectbox(
-            "Senior Citizen",
-            [0,1]
-        )
+    row = {
+        "Account length": account,
+        "International plan": 1 if intl_plan=="Yes" else 0,
+        "Voice mail plan": 1 if vm_plan=="Yes" else 0,
+        "Total day minutes": day_min,
+        "Total day calls": day_calls,
+        "Total eve minutes": eve_min,
+        "Total eve calls": eve_calls,
+        "Total night minutes": night_min,
+        "Total night calls": night_calls,
+        "Total intl minutes": intl_min,
+        "Total intl calls": intl_calls,
+        "Customer service calls": cs_calls,
+        "Total Charges": total_charges,
+        "Total_Usage": total_usage,
+        "Service_Stress": service_stress,
+    }
 
-        Partner = st.selectbox(
-            "Partner",
-            ["Yes","No"]
-        )
+    for s in states:
+        row[f"State_{s}"]=1 if s==state else 0
 
-        Dependents = st.selectbox(
-            "Dependents",
-            ["Yes","No"]
-        )
+    row["Revenue_Segment_Medium"]=0
+    row["Revenue_Segment_High"]=0
+    if total_charges>=100:
+        row["Revenue_Segment_High"]=1
+    elif total_charges>=50:
+        row["Revenue_Segment_Medium"]=1
 
-        tenure = st.number_input(
-            "Tenure (Months)",
-            0,
-            100,
-            12
-        )
+    df=pd.DataFrame([row])
 
-        PhoneService = st.selectbox(
-            "Phone Service",
-            ["Yes","No"]
-        )
+    # ensure exact order
+    if hasattr(model,"feature_names_in_"):
+        for col in model.feature_names_in_:
+            if col not in df.columns:
+                df[col]=0
+        df=df[list(model.feature_names_in_)]
 
-        MultipleLines = st.selectbox(
-            "Multiple Lines",
-            ["Yes","No","No phone service"]
-        )
+    pred=model.predict(df)[0]
+    prob=model.predict_proba(df)[0][1] if hasattr(model,"predict_proba") else None
 
-        InternetService = st.selectbox(
-            "Internet Service",
-            ["DSL","Fiber optic","No"]
-        )
+    if pred==1:
+        st.error("⚠️ Customer is likely to Churn")
+    else:
+        st.success("✅ Customer is likely to Stay")
 
-        OnlineSecurity = st.selectbox(
-            "Online Security",
-            ["Yes","No","No internet service"]
-        )
+    if prob is not None:
+        st.metric("Churn Probability", f"{prob*100:.2f}%")
 
-        OnlineBackup = st.selectbox(
-            "Online Backup",
-            ["Yes","No","No internet service"]
-        )
-
-    with col2:
-
-        DeviceProtection = st.selectbox(
-            "Device Protection",
-            ["Yes","No","No internet service"]
-        )
-
-        TechSupport = st.selectbox(
-            "Tech Support",
-            ["Yes","No","No internet service"]
-        )
-
-        StreamingTV = st.selectbox(
-            "Streaming TV",
-            ["Yes","No","No internet service"]
-        )
-
-        StreamingMovies = st.selectbox(
-            "Streaming Movies",
-            ["Yes","No","No internet service"]
-        )
-
-        Contract = st.selectbox(
-            "Contract",
-            ["Month-to-month","One year","Two year"]
-        )
-
-        PaperlessBilling = st.selectbox(
-            "Paperless Billing",
-            ["Yes","No"]
-        )
-
-        PaymentMethod = st.selectbox(
-            "Payment Method",
-            [
-                "Electronic check",
-                "Mailed check",
-                "Bank transfer (automatic)",
-                "Credit card (automatic)"
-            ]
-        )
-
-        MonthlyCharges = st.number_input(
-            "Monthly Charges",
-            0.0,
-            1000.0,
-            70.0
-        )
-
-        TotalCharges = st.number_input(
-            "Total Charges",
-            0.0,
-            100000.0,
-            1000.0
-        )
-
-    submitted = st.form_submit_button("Predict")
-
-# -----------------------------
-# Prediction
-# -----------------------------
-if submitted:
-
-    try:
-
-        input_df = pd.DataFrame({
-            "gender":[gender],
-            "SeniorCitizen":[SeniorCitizen],
-            "Partner":[Partner],
-            "Dependents":[Dependents],
-            "tenure":[tenure],
-            "PhoneService":[PhoneService],
-            "MultipleLines":[MultipleLines],
-            "InternetService":[InternetService],
-            "OnlineSecurity":[OnlineSecurity],
-            "OnlineBackup":[OnlineBackup],
-            "DeviceProtection":[DeviceProtection],
-            "TechSupport":[TechSupport],
-            "StreamingTV":[StreamingTV],
-            "StreamingMovies":[StreamingMovies],
-            "Contract":[Contract],
-            "PaperlessBilling":[PaperlessBilling],
-            "PaymentMethod":[PaymentMethod],
-            "MonthlyCharges":[MonthlyCharges],
-            "TotalCharges":[TotalCharges]
-        })
-
-        prediction = model.predict(input_df)[0]
-        probability = model.predict_proba(input_df)[0]
-
-        churn_probability = probability[1] * 100
-        stay_probability = probability[0] * 100
-
-        st.markdown("---")
-
-        if prediction == 1:
-            st.error(f"⚠ Customer is likely to CHURN")
-        else:
-            st.success(f"✅ Customer is likely to STAY")
-
-        col1,col2 = st.columns(2)
-
-        with col1:
-            st.metric(
-                "Stay Probability",
-                f"{stay_probability:.2f}%"
-            )
-
-        with col2:
-            st.metric(
-                "Churn Probability",
-                f"{churn_probability:.2f}%"
-            )
-
-        result = input_df.copy()
-        result["Prediction"] = prediction
-        result["Stay Probability"] = stay_probability
-        result["Churn Probability"] = churn_probability
-        result["Timestamp"] = datetime.now()
-
-        csv = result.to_csv(index=False).encode()
-
-        st.download_button(
-            "⬇ Download Prediction",
-            csv,
-            file_name="customer_prediction.csv",
-            mime="text/csv"
-        )
-
-    except Exception as e:
-
-        st.error("Prediction Failed")
-
-        st.exception(e)
+    st.subheader("Engineered Features")
+    st.write({
+        "Total Charges": round(total_charges,2),
+        "Total Usage": round(total_usage,2),
+        "Service Stress": round(service_stress,3)
+    })
