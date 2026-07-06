@@ -4,7 +4,7 @@ A Machine Learning web application that predicts whether a telecom customer is l
 
 ## 🚀 Live Demo
 
-👉 https://YOUR-STREAMLIT-LINK.streamlit.app/
+👉 https://predict-churn-customer.streamlit.app/
 
 ---
 
